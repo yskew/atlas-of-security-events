@@ -1,16 +1,18 @@
 name: SecurityEvents pipeline
 
-# Two scheduled runs per day. Cron times are UTC — adjust the offsets for your
-# timezone. The first run starts at 00:00 and is capped at 5h (RUN_MAX_MINUTES),
-# so it finishes by ~05:00; the second starts at 05:30, leaving a clean gap.
-#
-# Each run resumes the city sweep from the bookmark saved in the database, so the
-# two runs together cover the whole city list. You can also trigger a run by hand
-# from the Actions tab (workflow_dispatch).
+# Two scheduled runs per day, in BST (British Summer Time = UTC+1). GitHub cron
+# is UTC-only, so the times below are written in UTC:
+#   23:00 UTC = 00:00 BST  (midnight UK — the primary run)
+#   04:30 UTC = 05:30 BST  (second run, 30 min after the first 5h window ends)
+# First run is capped at 5h (RUN_MAX_MINUTES) so it finishes ~05:00 BST; the
+# second resumes the city sweep from the bookmark, so the two cover the whole
+# list each day. NOTE: GitHub can't auto-adjust for DST — in GMT (winter) these
+# fire one hour later in local UK time (01:00 / 06:30). Manual runs are still
+# available from the Actions tab (workflow_dispatch) but are never required.
 on:
   schedule:
-    - cron: "0 0 * * *"    # 00:00 UTC
-    - cron: "30 5 * * *"   # 05:30 UTC
+    - cron: "0 23 * * *"   # 23:00 UTC = 00:00 BST
+    - cron: "30 4 * * *"   # 04:30 UTC = 05:30 BST
   workflow_dispatch: {}
 
 # Never let a second run start while one is still going (the bookmark is shared
