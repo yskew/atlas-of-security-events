@@ -206,6 +206,17 @@ const TAP_MOVE_PX = 8; // movement under this on release = a tap (select), not a
 const TAP_HIT_PX = 32; // screen-space radius (px) within which a tap picks a city
 const FRONT_Z = 0.15; // world-z above this = near, visible hemisphere (else occluded)
 
+// yaw/pitch (for the global qX(pitch)*qY(yaw) model) that bring a lat/lng to
+// face the camera (+Z) — i.e. center that location, north-up, no roll. Used for
+// the opening view and for "zoom out in place" when deselecting.
+function faceYawPitch(lat: number, lng: number): { yaw: number; pitch: number } {
+  const p = latLngToVec3(lat, lng, 1).normalize();
+  return {
+    yaw: Math.atan2(-p.x, p.z),
+    pitch: Math.max(-MAX_PITCH, Math.min(MAX_PITCH, Math.atan2(p.y, Math.hypot(p.x, p.z)))),
+  };
+}
+
 function World({ isMobile }: { isMobile: boolean }) {
   const events = useStore((s) => s.events);
   const country = useStore((s) => s.country);
@@ -215,16 +226,18 @@ function World({ isMobile }: { isMobile: boolean }) {
   const earthRef = useRef<THREE.Mesh>(null);
   const { camera, gl } = useThree();
 
+  // The lat/lng the current selection focuses on (city, else country centroid).
+  const focusLoc = useMemo(
+    () =>
+      city ? cityCoord(events, city) : country ? countryCentroid(events, country) : null,
+    [events, country, city],
+  );
+
   const targetQuat = useMemo(() => {
-    const loc = city
-      ? cityCoord(events, city)
-      : country
-        ? countryCentroid(events, country)
-        : null;
-    if (!loc) return null;
+    if (!focusLoc) return null;
     // Orientation that faces the city AND keeps north up (no roll), so the
     // region appears upright/vertical rather than rolled sideways.
-    const n = latLngToVec3(loc[0], loc[1], 1).normalize();
+    const n = latLngToVec3(focusLoc[0], focusLoc[1], 1).normalize();
     const worldUp = new THREE.Vector3(0, 1, 0);
     const north = worldUp.clone().sub(n.clone().multiplyScalar(n.dot(worldUp)));
     if (north.lengthSq() < 1e-6) north.set(0, 0, -1); // at a pole
@@ -238,7 +251,13 @@ function World({ isMobile }: { isMobile: boolean }) {
       0, 0, 0, 1,
     );
     return new THREE.Quaternion().setFromRotationMatrix(m);
-  }, [events, country, city]);
+  }, [focusLoc]);
+
+  // Remember the last focused location so that on DESELECT we pull the camera
+  // straight back from that same spot (face it at global zoom), instead of
+  // snapping to a different orientation.
+  const focusLocRef = useRef(focusLoc);
+  if (focusLoc) focusLocRef.current = focusLoc;
 
   // Pull the camera back a bit on a narrow portrait screen so the focused
   // region (and the whole globe) fits the width instead of being clipped.
@@ -284,6 +303,19 @@ function World({ isMobile }: { isMobile: boolean }) {
   const wasFocused = useRef(focused);
   const qY = useRef(new THREE.Quaternion());
   const qX = useRef(new THREE.Quaternion());
+
+  // Open with the globe ORIENTED to the Riyadh / Middle-East region (between
+  // Europe and Asia) at the normal global zoom — just the starting rotation,
+  // NOT a selection or zoom — then the idle spin carries on from there.
+  // Solve yaw/pitch for our qX(pitch)*qY(yaw) model that brings Riyadh's
+  // direction to face the camera (+Z), i.e. centers that region.
+  const initedView = useRef(false);
+  if (!initedView.current) {
+    const init = faceYawPitch(24.7136, 46.6753); // Riyadh
+    yaw.current = init.yaw;
+    pitch.current = init.pitch;
+    initedView.current = true;
+  }
 
   // Pointer (mouse + touch) handlers on the canvas. Pointer-capture keeps a drag
   // alive even if it strays over the side panels; touch-action:none lets a swipe
@@ -406,11 +438,16 @@ function World({ isMobile }: { isMobile: boolean }) {
       } else {
         // global: user-controlled free spin + ambient idle spin.
         if (wasFocused.current) {
-          // just returned from a focus — seed yaw/pitch from the current
-          // orientation so control resumes without a visible jump.
-          g.rotation.reorder("XYZ"); // matches the qX * qY compose order below
-          yaw.current = g.rotation.y;
-          pitch.current = Math.max(-MAX_PITCH, Math.min(MAX_PITCH, g.rotation.x));
+          // just deselected — face the SAME location we were zoomed into (at
+          // global zoom), so the camera simply pulls back in place instead of
+          // snapping elsewhere. The focused view is already north-up centered on
+          // it, so this matches and there's no jump.
+          const loc = focusLocRef.current;
+          if (loc) {
+            const fp = faceYawPitch(loc[0], loc[1]);
+            yaw.current = fp.yaw;
+            pitch.current = fp.pitch;
+          }
           velYaw.current = 0;
           velPitch.current = 0;
           wasFocused.current = false;
