@@ -164,30 +164,12 @@ uniform float uInnerCos; uniform float uOuterCos; uniform float uDim;`,
   );
 }
 
-function Markers() {
-  const events = useStore((s) => s.events);
-  const city = useStore((s) => s.city);
-  const country = useStore((s) => s.country);
-  const data = useMemo(() => {
-    const seen = new Map<string, THREE.Vector3>();
-    for (const e of events) {
-      // Focus narrows what's lit: a city shows only itself; a country shows
-      // only its own cities; the globe shows them all.
-      if (city) {
-        if (e.city !== city) continue;
-      } else if (country) {
-        if (e.country !== country) continue;
-      }
-      if (e.city && hasCoords(e) && !seen.has(e.city)) {
-        seen.set(e.city, latLngToVec3(e.latitude as number, e.longitude as number, R * 1.02));
-      }
-    }
-    return [...seen.entries()].map(([name, pos]) => ({ name, pos }));
-  }, [events, city, country]);
+type MarkerDatum = { name: string; country: string | null; pos: THREE.Vector3 };
 
+function Markers({ markers }: { markers: MarkerDatum[] }) {
   return (
     <>
-      {data.map((d) => (
+      {markers.map((d) => (
         <Billboard key={d.name} position={d.pos}>
           {/* small white square marker */}
           <mesh>
@@ -220,6 +202,9 @@ const AXIS_X = new THREE.Vector3(1, 0, 0);
 const MAX_PITCH = 1.3; // clamp so a drag can't roll over the poles
 const DRAG_SENS = 0.005; // radians per pixel
 const IDLE_RESUME_S = 3; // seconds of no interaction before the ambient spin returns
+const TAP_MOVE_PX = 8; // movement under this on release = a tap (select), not a drag
+const TAP_HIT_PX = 32; // screen-space radius (px) within which a tap picks a city
+const FRONT_Z = 0.15; // world-z above this = near, visible hemisphere (else occluded)
 
 function World({ isMobile }: { isMobile: boolean }) {
   const events = useStore((s) => s.events);
@@ -260,6 +245,30 @@ function World({ isMobile }: { isMobile: boolean }) {
   const zBase = city ? 1.7 : country ? 2.15 : 2.85;
   const targetZ = isMobile ? zBase * 1.32 : zBase;
 
+  // City markers for the current scope (lifted here so the tap handler below can
+  // hit-test them): a city shows only itself; a country shows only its cities;
+  // the globe shows them all.
+  const markers = useMemo<MarkerDatum[]>(() => {
+    const seen = new Map<string, MarkerDatum>();
+    for (const e of events) {
+      if (city) {
+        if (e.city !== city) continue;
+      } else if (country) {
+        if (e.country !== country) continue;
+      }
+      if (e.city && hasCoords(e) && !seen.has(e.city)) {
+        seen.set(e.city, {
+          name: e.city,
+          country: e.country,
+          pos: latLngToVec3(e.latitude as number, e.longitude as number, R * 1.02),
+        });
+      }
+    }
+    return [...seen.values()];
+  }, [events, city, country]);
+  const markersRef = useRef(markers);
+  markersRef.current = markers; // keep the native tap handler reading the latest
+
   // --- user drag-to-rotate, ONLY when global (no region/city selected) ---
   const focused = !!targetQuat;
   const focusedRef = useRef(focused);
@@ -282,19 +291,56 @@ function World({ isMobile }: { isMobile: boolean }) {
   useEffect(() => {
     const el = gl.domElement;
     el.style.touchAction = "none";
+    let downX = 0;
+    let downY = 0;
     let lastX = 0;
     let lastY = 0;
+    const scratch = new THREE.Vector3();
+
+    // A tap (negligible movement) selects the nearest front-facing city marker.
+    // Hit-tested in screen space against a generous radius so the tiny dots are
+    // easy to tap; markers on the far hemisphere (occluded by the globe) are
+    // skipped. A tap on EMPTY space while zoomed in clears back to the globe.
+    const handleTap = (clientX: number, clientY: number) => {
+      const g = groupRef.current;
+      if (!g) return;
+      const rect = el.getBoundingClientRect();
+      const tx = clientX - rect.left;
+      const ty = clientY - rect.top;
+      const q = g.quaternion;
+      let best: MarkerDatum | null = null;
+      let bestDist = TAP_HIT_PX;
+      for (const m of markersRef.current) {
+        scratch.copy(m.pos).applyQuaternion(q); // world pos (group is rotation-only at origin)
+        if (scratch.z <= FRONT_Z) continue; // far side — behind the globe
+        scratch.project(camera); // -> normalized device coords
+        const sx = (scratch.x * 0.5 + 0.5) * rect.width;
+        const sy = (-scratch.y * 0.5 + 0.5) * rect.height;
+        const d = Math.hypot(sx - tx, sy - ty);
+        if (d < bestDist) {
+          bestDist = d;
+          best = m;
+        }
+      }
+      if (best) {
+        useStore.getState().focusCity(best.country, best.name);
+      } else if (focusedRef.current) {
+        useStore.getState().selectCountry(null); // empty tap while zoomed in -> back to globe
+      }
+    };
 
     const onDown = (e: PointerEvent) => {
-      if (focusedRef.current) return;
-      dragging.current = true;
-      lastX = e.clientX;
-      lastY = e.clientY;
-      velYaw.current = 0;
-      velPitch.current = 0;
-      lastInteract.current = nowRef.current;
-      el.setPointerCapture?.(e.pointerId);
-      el.style.cursor = "grabbing";
+      downX = lastX = e.clientX;
+      downY = lastY = e.clientY;
+      // Rotation only when global; tap-to-select works in any scope (below).
+      if (!focusedRef.current) {
+        dragging.current = true;
+        velYaw.current = 0;
+        velPitch.current = 0;
+        lastInteract.current = nowRef.current;
+        el.setPointerCapture?.(e.pointerId);
+        el.style.cursor = "grabbing";
+      }
     };
     const onMove = (e: PointerEvent) => {
       if (!dragging.current) return;
@@ -309,29 +355,45 @@ function World({ isMobile }: { isMobile: boolean }) {
       velPitch.current = dPitch;
       lastInteract.current = nowRef.current;
     };
-    const onUp = (e: PointerEvent) => {
+    const endDrag = (e: PointerEvent) => {
+      if (!dragging.current) return;
       dragging.current = false;
       lastInteract.current = nowRef.current;
       el.releasePointerCapture?.(e.pointerId);
       if (!focusedRef.current) el.style.cursor = "grab";
     };
+    const onUp = (e: PointerEvent) => {
+      endDrag(e);
+      if (Math.hypot(e.clientX - downX, e.clientY - downY) < TAP_MOVE_PX) {
+        handleTap(e.clientX, e.clientY); // it was a tap, not a drag
+      }
+    };
 
     el.addEventListener("pointerdown", onDown);
     el.addEventListener("pointermove", onMove);
     el.addEventListener("pointerup", onUp);
-    el.addEventListener("pointercancel", onUp);
+    el.addEventListener("pointercancel", endDrag);
     return () => {
       el.removeEventListener("pointerdown", onDown);
       el.removeEventListener("pointermove", onMove);
       el.removeEventListener("pointerup", onUp);
-      el.removeEventListener("pointercancel", onUp);
+      el.removeEventListener("pointercancel", endDrag);
     };
-  }, [gl]);
+  }, [gl, camera]);
 
   // grab cursor only while the globe is freely rotatable
   useEffect(() => {
     gl.domElement.style.cursor = focused ? "default" : "grab";
   }, [gl, focused]);
+
+  // Esc clears the selection back to the globe (desktop convention).
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") useStore.getState().selectCountry(null);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
 
   useFrame((state, delta) => {
     nowRef.current = state.clock.elapsedTime;
@@ -382,7 +444,7 @@ function World({ isMobile }: { isMobile: boolean }) {
   return (
     <group ref={groupRef}>
       <Earth meshRef={earthRef} isMobile={isMobile} />
-      <Markers />
+      <Markers markers={markers} />
     </group>
   );
 }

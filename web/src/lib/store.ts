@@ -19,6 +19,7 @@ interface State {
   setEvents: (e: SecurityEvent[]) => void;
   selectCountry: (c: string | null) => void;
   selectCity: (c: string | null) => void;
+  focusCity: (country: string | null, city: string | null) => void;
   toggleType: (t: string) => void;
   setDeadline: (d: number | null) => void;
   setSecurityOnly: (b: boolean) => void;
@@ -41,6 +42,9 @@ export const useStore = create<State>((set) => ({
   // Choosing a country resets the city; choosing "all" resets both.
   selectCountry: (country) => set({ country, city: null, selectedId: null }),
   selectCity: (city) => set({ city, selectedId: null }),
+  // Select a city AND its country together (used when tapping a globe marker),
+  // so the breadcrumb / filter rail stay consistent.
+  focusCity: (country, city) => set({ country, city, selectedId: null }),
   toggleType: (t) =>
     set((s) => ({
       types: s.types.includes(t)
