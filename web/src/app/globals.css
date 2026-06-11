@@ -1,0 +1,120 @@
+@import "tailwindcss";
+
+/* ---- Molten-globe palette (near-black + amber/gold) ---- */
+:root {
+  --bg: #050402;
+  --bg-2: #0c0803;
+  --panel: rgba(255, 240, 220, 0.04);
+  --panel-border: rgba(255, 196, 110, 0.12);
+  --text: #f4ece0;
+  --muted: #b09877;
+  --accent: #fbbf24; /* amber-400 */
+  --accent-2: #f59e0b; /* amber-500 */
+  --hot: #fb923c; /* orange-400 */
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-panel: var(--panel);
+  --color-text: var(--text);
+  --color-muted: var(--muted);
+  --color-accent: var(--accent);
+  --color-hot: var(--hot);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  color: var(--text);
+  background:
+    radial-gradient(1100px 700px at 50% -12%, #3a2207 0%, transparent 60%),
+    radial-gradient(900px 600px at 100% 105%, #241606 0%, transparent 55%),
+    linear-gradient(180deg, var(--bg-2) 0%, var(--bg) 100%);
+  background-attachment: fixed;
+  font-family: var(--font-sans), system-ui, sans-serif;
+  overflow: hidden; /* single-page immersive */
+}
+
+/* ---- Glassmorphism ---- */
+.glass {
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  backdrop-filter: blur(18px) saturate(140%);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
+  box-shadow:
+    0 8px 40px rgba(0, 0, 0, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+.glow-accent {
+  box-shadow: 0 0 0 1px rgba(251, 191, 36, 0.45), 0 0 24px rgba(245, 158, 11, 0.3);
+}
+
+/* ---- Scrollbars ---- */
+.scroll-thin::-webkit-scrollbar {
+  width: 6px;
+}
+.scroll-thin::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 9999px;
+}
+.scroll-thin::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* ---- Range slider (deadline) ---- */
+input[type="range"].range {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 4px;
+  border-radius: 9999px;
+  background: linear-gradient(90deg, var(--hot), var(--accent));
+  outline: none;
+}
+input[type="range"].range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #fff7e6;
+  box-shadow: 0 0 12px rgba(251, 191, 36, 0.85);
+  cursor: pointer;
+}
+
+/* ---- Starfield backdrop ---- */
+.starfield {
+  background-image:
+    radial-gradient(1px 1px at 25% 15%, rgba(255, 240, 210, 0.9), transparent),
+    radial-gradient(1px 1px at 60% 70%, rgba(255, 230, 190, 0.6), transparent),
+    radial-gradient(1px 1px at 85% 35%, rgba(255, 255, 255, 0.55), transparent),
+    radial-gradient(1px 1px at 10% 80%, rgba(255, 240, 210, 0.45), transparent),
+    radial-gradient(2px 2px at 45% 48%, rgba(255, 235, 200, 0.7), transparent),
+    radial-gradient(1px 1px at 75% 12%, rgba(255, 255, 255, 0.5), transparent);
+  background-repeat: repeat;
+  background-size: 320px 320px, 260px 260px, 360px 360px, 210px 210px, 420px 420px, 290px 290px;
+  animation: twinkle 6s ease-in-out infinite alternate;
+}
+@keyframes twinkle {
+  0% { opacity: 0.5; }
+  100% { opacity: 0.85; }
+}
+
+@keyframes pulse-ring {
+  0% { transform: scale(0.8); opacity: 0.7; }
+  70% { transform: scale(2.2); opacity: 0; }
+  100% { opacity: 0; }
+}
+.pulse-ring::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  background: var(--accent);
+  animation: pulse-ring 2.4s ease-out infinite;
+}

@@ -1,0 +1,18 @@
+# Core
+httpx>=0.27          # HTTP client for fetch ladder + ctftime API
+pydantic>=2.7        # schemas / validation for extracted events
+SQLAlchemy>=2.0      # DB layer (SQLite locally, Postgres/Neon in prod)
+python-dotenv>=1.0   # load .env for local runs
+
+# Postgres driver (only needed when DATABASE_URL points at Neon/Postgres;
+# harmless to install locally where SQLite is used)
+psycopg[binary]>=3.1
+
+# Discovery
+ddgs>=6.0            # DuckDuckGo search (keyless) — finds candidate event pages
+
+# Dedup
+rapidfuzz>=3.0       # fuzzy name matching to merge the same event across sources
+
+# LLM extraction (optional at runtime — pipeline runs without it)
+google-genai>=1.0    # Google Gemini SDK (structured extraction of fetched pages)

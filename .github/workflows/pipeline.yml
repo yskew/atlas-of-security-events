@@ -1,0 +1,58 @@
+name: SecurityEvents pipeline
+
+# Two scheduled runs per day. Cron times are UTC — adjust the offsets for your
+# timezone. The first run starts at 00:00 and is capped at 5h (RUN_MAX_MINUTES),
+# so it finishes by ~05:00; the second starts at 05:30, leaving a clean gap.
+#
+# Each run resumes the city sweep from the bookmark saved in the database, so the
+# two runs together cover the whole city list. You can also trigger a run by hand
+# from the Actions tab (workflow_dispatch).
+on:
+  schedule:
+    - cron: "0 0 * * *"    # 00:00 UTC
+    - cron: "30 5 * * *"   # 05:30 UTC
+  workflow_dispatch: {}
+
+# Never let a second run start while one is still going (the bookmark is shared
+# state); queue it instead of running both against the same cursor.
+concurrency:
+  group: securityevents-pipeline
+  cancel-in-progress: false
+
+# Least-privilege: this job only reads the repo to run the pipeline.
+permissions:
+  contents: read
+
+jobs:
+  run-pipeline:
+    runs-on: ubuntu-latest
+    # Hard safety just under GitHub's 6h job kill. Our soft cap (RUN_MAX_MINUTES)
+    # stops the work cleanly at ~5h and saves the bookmark well before this fires.
+    timeout-minutes: 330
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run pipeline
+        env:
+          # Same Neon database as local runs, so the city bookmark is shared.
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          GEMINI_API_KEYS: ${{ secrets.GEMINI_API_KEYS }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          # 5h soft cap — stop cleanly, save the bookmark, resume next run.
+          RUN_MAX_MINUTES: "300"
+          # 0 = no fixed extraction cap; time + full sweep govern the run.
+          MAX_EXTRACT_PER_RUN: "0"
+        run: python -m pipeline.run
