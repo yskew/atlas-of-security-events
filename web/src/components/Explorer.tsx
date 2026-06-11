@@ -85,24 +85,45 @@ export default function Explorer({ initial }: { initial: SecurityEvent[] }) {
       {/* top vignette for legibility */}
       <div className="pointer-events-none absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-black/40 to-transparent" />
 
-      {/* header */}
+      {/* header — desktop: stacked lockup, top-left */}
       <motion.header
         initial={{ opacity: 0, y: -12 }}
         animate={{ opacity: 1, y: 0 }}
-        className="pointer-events-none absolute left-6 top-6 z-10"
+        className="pointer-events-none absolute left-6 top-6 z-10 hidden lg:block"
       >
-        <HudPanel className="px-3 py-2.5 lg:px-4 lg:py-3">
-          <div className="flex items-center gap-2">
-            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[var(--accent)] shadow-[0_0_10px_2px_rgba(251,191,36,0.85)]" />
-            <h1 className="text-sm font-semibold uppercase tracking-[0.2em] text-white lg:text-base">
-              Atlas Eventuum Securitatis
-            </h1>
+        <HudPanel className="px-3 py-2.5 lg:w-72 lg:px-4 lg:py-3">
+          <div className="flex items-stretch gap-2.5">
+            {/* slim gold accent bar — flat, matches the HUD line work */}
+            <span className="w-[3px] shrink-0 self-stretch bg-[var(--accent)]" />
+            <div>
+              <h1 className="text-lg font-semibold uppercase leading-none tracking-[0.16em] text-white lg:text-xl">
+                Atlas
+              </h1>
+              <div className="mt-1 text-[10px] font-medium uppercase leading-none tracking-[0.28em] text-[var(--accent)]/90 lg:text-[11px]">
+                Eventuum Securitatis
+              </div>
+              <div className="mt-2 flex items-center gap-1.5 text-[9px] uppercase tracking-[0.2em] text-white/35">
+                <span className="h-1 w-1 animate-pulse rounded-full bg-[var(--accent)]" />
+                CTF · CFP · CONF
+              </div>
+            </div>
           </div>
-          <p className="mt-1.5 text-[10px] uppercase tracking-[0.18em] text-white/40">
-            CTF · CFP · CONF
-          </p>
         </HudPanel>
       </motion.header>
+
+      {/* header — mobile: single-line bar filling the top (lg:hidden) */}
+      <header className="absolute inset-x-0 top-0 z-10 border-b border-[var(--accent)]/20 bg-[rgba(8,6,3,0.82)] pt-[env(safe-area-inset-top)] backdrop-blur-md lg:hidden">
+        <div className="flex items-center gap-2.5 px-4 py-3">
+          <span className="h-5 w-[3px] shrink-0 bg-[var(--accent)]" />
+          <h1 className="shrink-0 font-mono text-sm font-semibold uppercase tracking-[0.18em] text-white">
+            Atlas
+          </h1>
+          <span className="min-w-0 flex-1 truncate font-mono text-[10px] font-medium uppercase tracking-[0.22em] text-[var(--accent)]/90">
+            Eventuum Securitatis
+          </span>
+          <span className="h-1.5 w-1.5 shrink-0 animate-pulse rounded-full bg-[var(--accent)]" />
+        </div>
+      </header>
 
       {/* breadcrumb top-center (desktop only — scope shows in the mobile bar) */}
       <div className="absolute left-1/2 top-6 z-10 hidden -translate-x-1/2 lg:block">

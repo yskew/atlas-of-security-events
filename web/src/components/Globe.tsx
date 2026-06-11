@@ -37,11 +37,12 @@ function Earth({
   meshRef: React.RefObject<THREE.Mesh | null>;
   isMobile: boolean;
 }) {
-  // Phones load a 2K texture (~70KB) instead of the 8K (~3MB) — far less to
-  // download and far less GPU memory, while staying crisp on a small screen.
+  // Phones load a 4K texture (~0.3MB) instead of the 8K (~3MB) — far less to
+  // download and far less GPU memory, while staying crisp even when zoomed into
+  // a country on a high-DPI screen.
   const tex = useLoader(
     THREE.TextureLoader,
-    isMobile ? "/textures/earth-night-2k.jpg" : "/textures/earth-night-8k.jpg",
+    isMobile ? "/textures/earth-night-4k.jpg" : "/textures/earth-night-8k.jpg",
   );
   const matRef = useRef<THREE.MeshStandardMaterial>(null);
   const intensity = useRef(0.25);
@@ -395,7 +396,7 @@ export default function Globe() {
         // narrow width; dpr is capped lower to keep fill-rate manageable.
         camera={{ position: [0, 0, isMobile ? 3.7 : 2.85], fov: isMobile ? 42 : 38 }}
         gl={{ antialias: true }}
-        dpr={isMobile ? [1, 1.5] : [1, 2]}
+        dpr={[1, 2]}
       >
         <color attach="background" args={["#040308"]} />
         <ambientLight intensity={0.15} />
