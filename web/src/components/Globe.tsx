@@ -261,7 +261,7 @@ function World({ isMobile }: { isMobile: boolean }) {
 
   // Pull the camera back a bit on a narrow portrait screen so the focused
   // region (and the whole globe) fits the width instead of being clipped.
-  const zBase = city ? 1.7 : country ? 2.15 : 2.85;
+  const zBase = city ? 1.7 : country ? 2.15 : 2.78; // global view default zoom
   const targetZ = isMobile ? zBase * 1.32 : zBase;
 
   // City markers for the current scope (lifted here so the tap handler below can
@@ -343,7 +343,7 @@ function World({ isMobile }: { isMobile: boolean }) {
       let best: MarkerDatum | null = null;
       let bestDist = TAP_HIT_PX;
       for (const m of markersRef.current) {
-        scratch.copy(m.pos).applyQuaternion(q); // world pos (group is rotation-only at origin)
+        scratch.copy(m.pos).applyQuaternion(q); // world position (group is rotation-only at origin)
         if (scratch.z <= FRONT_Z) continue; // far side — behind the globe
         scratch.project(camera); // -> normalized device coords
         const sx = (scratch.x * 0.5 + 0.5) * rect.width;
@@ -476,6 +476,19 @@ function World({ isMobile }: { isMobile: boolean }) {
     }
     camera.position.z += (targetZ - camera.position.z) * 0.06;
     camera.lookAt(0, 0, 0);
+
+    // Shift the whole render ~16% left on desktop so the globe uses the open
+    // space beside the right-hand panels. A screen-space view offset (not a 3D
+    // move) keeps the shift CONSTANT at every zoom — a focused city stays
+    // left-framed too, instead of the close-up throwing it off to one side.
+    // Centered on mobile.
+    const cam = camera as THREE.PerspectiveCamera;
+    if (isMobile) {
+      if (cam.view?.enabled) cam.clearViewOffset();
+    } else {
+      const { width, height } = state.size;
+      cam.setViewOffset(width, height, width * 0.16, 0, width, height);
+    }
   });
 
   return (
@@ -493,7 +506,7 @@ export default function Globe() {
       <Canvas
         // Portrait phones start further back (wider fov) so the globe fits the
         // narrow width; dpr is capped lower to keep fill-rate manageable.
-        camera={{ position: [0, 0, isMobile ? 3.7 : 2.85], fov: isMobile ? 42 : 38 }}
+        camera={{ position: [0, 0, isMobile ? 3.67 : 2.78], fov: isMobile ? 42 : 38 }}
         gl={{ antialias: true }}
         dpr={[1, 2]}
       >

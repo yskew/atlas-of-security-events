@@ -44,8 +44,13 @@ export default function StatsStrip() {
   const scope = (city ?? country ?? "GLOBAL").toUpperCase();
 
   return (
-    <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
-      <HudPanel className="flex items-center gap-1 px-4 py-2">
+    <motion.div
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.2 }}
+      className="w-full"
+    >
+      <HudPanel className="flex w-full items-center justify-center gap-1 px-3 py-2">
         <div className="px-4">
           <div className="font-mono text-[9px] uppercase tracking-[0.18em] text-white/40">
             Status
