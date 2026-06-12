@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Atlas Eventuum Securitatis — find CTFs, CFPs & cons near you",
+  title: "Global Security Events — find CTFs, CFPs & cons near you",
   description:
     "An immersive globe of upcoming cybersecurity events — CTFs, calls for papers, conferences — filtered by country and city.",
 };

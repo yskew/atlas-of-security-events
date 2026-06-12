@@ -39,10 +39,10 @@ export default function Explorer({ initial }: { initial: SecurityEvent[] }) {
           <span className="h-7 w-[3px] bg-[var(--accent)]" />
           <div>
             <div className="text-sm font-semibold uppercase tracking-[0.16em] text-white">
-              Atlas
+              Global Security Events
             </div>
             <div className="mt-0.5 text-[9px] font-medium uppercase tracking-[0.26em] text-[var(--accent)]/90">
-              Eventuum Securitatis
+              CTF · CFP · CONF
             </div>
           </div>
         </div>
@@ -61,7 +61,15 @@ export default function Explorer({ initial }: { initial: SecurityEvent[] }) {
 
       {/* attribution — bottom-left over the globe */}
       <div className="pointer-events-none absolute bottom-3 left-3 z-10 hidden font-mono text-[9px] uppercase tracking-[0.18em] text-white/35 lg:block">
-        © 2026 <span className="text-[var(--accent)]/80">Yskew</span>
+        © 2026{" "}
+        <a
+          href="https://yskew.com/"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="pointer-events-auto text-[var(--accent)]/80 transition-colors hover:text-[var(--accent)] hover:underline"
+        >
+          Yskew
+        </a>
         <span className="text-white/20"> · </span>Open source
       </div>
 
@@ -69,12 +77,9 @@ export default function Explorer({ initial }: { initial: SecurityEvent[] }) {
       <header className="absolute inset-x-0 top-0 z-10 border-b border-[var(--accent)]/20 bg-[rgba(8,6,3,0.82)] pt-[env(safe-area-inset-top)] backdrop-blur-md lg:hidden">
         <div className="flex items-center gap-2.5 px-4 py-3">
           <span className="h-5 w-[3px] shrink-0 bg-[var(--accent)]" />
-          <h1 className="shrink-0 font-mono text-sm font-semibold uppercase tracking-[0.18em] text-white">
-            Atlas
+          <h1 className="min-w-0 flex-1 truncate font-mono text-sm font-semibold uppercase tracking-[0.18em] text-white">
+            Global Security Events
           </h1>
-          <span className="min-w-0 flex-1 truncate font-mono text-[10px] font-medium uppercase tracking-[0.22em] text-[var(--accent)]/90">
-            Eventuum Securitatis
-          </span>
           <span className="h-1.5 w-1.5 shrink-0 animate-pulse rounded-full bg-[var(--accent)]" />
         </div>
       </header>
