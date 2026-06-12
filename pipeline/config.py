@@ -112,6 +112,35 @@ CITIES: tuple[City, ...] = (
     City("Manama", "Bahrain", (), 26.2285, 50.5860),
     City("Tel Aviv", "Israel", ("tel-aviv",), 32.0853, 34.7818),
     City("Jerusalem", "Israel", (), 31.7683, 35.2137),
+    City("Taipei", "Taiwan", (), 25.0330, 121.5654),
+    City("Kuala Lumpur", "Malaysia", ("kl",), 3.1390, 101.6869),
+    City("Manila", "Philippines", (), 14.5995, 120.9842),
+    City("Jakarta", "Indonesia", (), -6.2088, 106.8456),
+    City("Ho Chi Minh City", "Vietnam", ("saigon",), 10.8231, 106.6297),
+    # --- Oceania ---
+    City("Sydney", "Australia", (), -33.8688, 151.2093),
+    City("Melbourne", "Australia", (), -37.8136, 144.9631),
+    City("Brisbane", "Australia", (), -27.4698, 153.0251),
+    City("Gold Coast", "Australia", (), -28.0167, 153.4000),
+    City("Canberra", "Australia", (), -35.2809, 149.1300),
+    City("Perth", "Australia", (), -31.9505, 115.8605),
+    City("Auckland", "New Zealand", (), -36.8485, 174.7633),
+    City("Wellington", "New Zealand", (), -41.2865, 174.7762),
+    # --- Latin America ---
+    City("Mexico City", "Mexico", ("cdmx",), 19.4326, -99.1332),
+    City("Buenos Aires", "Argentina", (), -34.6037, -58.3816),
+    City("Sao Paulo", "Brazil", ("são paulo",), -23.5558, -46.6396),
+    City("Rio de Janeiro", "Brazil", ("rio",), -22.9068, -43.1729),
+    City("Santiago", "Chile", (), -33.4489, -70.6693),
+    City("Bogota", "Colombia", ("bogotá",), 4.7110, -74.0721),
+    City("Lima", "Peru", (), -12.0464, -77.0428),
+    # --- Africa ---
+    City("Johannesburg", "South Africa", ("joburg",), -26.2041, 28.0473),
+    City("Cape Town", "South Africa", (), -33.9249, 18.4241),
+    City("Nairobi", "Kenya", (), -1.2921, 36.8219),
+    City("Cairo", "Egypt", (), 30.0444, 31.2357),
+    City("Lagos", "Nigeria", (), 6.5244, 3.3792),
+    City("Casablanca", "Morocco", (), 33.5731, -7.5898),
 )
 
 # Derived from CITIES so new countries appear automatically.
